@@ -6,7 +6,7 @@ import random
 class SpaceInvaders:
     def __init__(self):
 
-        self.lives = 3
+        self.hp = 3
         pygame.font.init()
         self.font = pygame.font.Font("pics/space_invaders.ttf", 15)
 
@@ -18,14 +18,14 @@ class SpaceInvaders:
                 2:[pygame.image.load("pics/enemy.png").convert(), pygame.image.load("pics/enemy2.png").convert()],
                 }
         self.player = pygame.image.load("pics/player.png").convert()
-        self.animationOn = 0
-        self.direction = 1
-        self.enemySpeed = 20
-        self.lastEnemyMove = 0
+        self.animation = 0 #skipt á milli tveggja myndana
+        self.direction = 1 #átt
+        self.geimveruHreyfing = 20 #Hveru langt þau fara hvert einasta skipti
+        self.geimveruHraði = 0 #Hversu hratt þau fara
         self.playerX = 400
         self.playerY = 550
-        self.bullet = None
-        self.bullets = []
+        self.skot = None
+        self.skotlist = []
         self.enemies = []
         startY = 50
         startX = 50
@@ -40,35 +40,35 @@ class SpaceInvaders:
             for columns in range(10):
                 out.append((enemy,pygame.Rect(startX * columns, startY * rows, 35, 35))) #35 er tíminn milli hreifinga
             self.enemies.append(out)
-        self.skot = 990
+        self.skotloc = 990
 
         space = 10
 
 
     def enemyUpdate(self):
-        if not self.lastEnemyMove:
+        if not self.geimveruHraði:
             for enemy in self.enemies:
                 for enemy in enemy:
                     enemy = enemy[1]
                     if enemy.colliderect(pygame.Rect(self.playerX, self.playerY, self.player.get_width(), self.player.get_height())): #Finnur collision, ef þú ert skotinn missiru 1 live
-                        self.lives -= 1
+                        self.hp -= 1
                         self.resetPlayer()
-                    enemy.x += self.enemySpeed * self.direction #fer til hægri/vinstri
-                    self.lastEnemyMove = 25
+                    enemy.x += self.geimveruHreyfing * self.direction #fer til hægri/vinstri
+                    self.geimveruHraði = 20
                     if enemy.x >= 750 or enemy.x <= 0: #Þegar þau komast á endan til hægri/vinstri fara þau niður
                         self.moveEnemiesDown()
                         self.direction *= -1
                     
-                    skot = random.randint(0, 1000) #Notað til þess að skot koma frá geimveronum ekki bara á random stað
-                    if skot > self.skot:
-                        self.bullets.append(pygame.Rect(enemy.x, enemy.y, 10, 20))
+                    skotloc = random.randint(0, 1000) #Notað til þess að skot koma frá geimveronum ekki bara á random stað
+                    if skotloc > self.skotloc:
+                        self.skotlist.append(pygame.Rect(enemy.x, enemy.y, 10, 20))
 
-            if self.animationOn:
-                self.animationOn -= 1
+            if self.animation:
+                self.animation -= 1
             else:
-                self.animationOn += 1
+                self.animation += 1
         else:
-            self.lastEnemyMove -= 1
+            self.geimveruHraði -= 1
     
         
     def moveEnemiesDown(self):
@@ -84,32 +84,32 @@ class SpaceInvaders:
             self.playerX += 5
         elif key[K_LEFT] and self.playerX > 0:
             self.playerX -= 5
-        if key[K_SPACE] and not self.bullet:
-            self.bullet = pygame.Rect(self.playerX + self.player.get_width() / 2- 2, self.playerY - 15, 5, 10)
+        if key[K_SPACE] and not self.skot:
+            self.skot = pygame.Rect(self.playerX + self.player.get_width() / 2, self.playerY - 15, 5, 10)
     "Þetta er notað þegar einhver deir, að þeir myndu hætta að skjóta, fann á google"
-    def bulletUpdate(self):
+    def skotUpdate(self):
         for i, enemy in enumerate(self.enemies):
             for j, enemy in enumerate(enemy):
                 enemy = enemy[1]
-                if self.bullet and enemy.colliderect(self.bullet):
+                if self.skot and enemy.colliderect(self.skot):
                     self.enemies[i].pop(j)
-                    self.bullet = None
-                    self.skot -= 1
+                    self.skot = None
+                    self.skotloc -= 1
 
         "Hraðinn á skotinu í byssuni"
-        if self.bullet:
-            self.bullet.y -= 10
-            if self.bullet.y < 0:
-                self.bullet = None
+        if self.skot:
+            self.skot.y -= 10
+            if self.skot.y < 0:
+                self.skot = None
 
-        "Byssuhraði invadera, og að lives myndi fara niður um einn ef collide"
-        for x in self.bullets:
+        "Byssuhraði invadera, og að hp myndi fara niður um einn ef collide"
+        for x in self.skotlist:
             x.y += 10
             if x.y > 600:
-                self.bullets.remove(x)
+                self.skotlist.remove(x)
             if x.colliderect(pygame.Rect(self.playerX, self.playerY, self.player.get_width(), self.player.get_height())):
-                self.lives -= 1
-                self.bullets.remove(x)
+                self.hp -= 1
+                self.skotlist.remove(x)
                 self.resetPlayer()
 
 
@@ -130,21 +130,21 @@ class SpaceInvaders:
                     sys.exit()
             for enemy in self.enemies:
                 for enemy in enemy:
-                    self.screen.blit(pygame.transform.scale(self.enemySprites[enemy[0]][self.animationOn], (35,35)), (enemy[1].x, enemy[1].y)) #tók smá tíma að leita af þessu, var originally með bara 1 mynd fyrir hvert
+                    self.screen.blit(pygame.transform.scale(self.enemySprites[enemy[0]][self.animation], (35,35)), (enemy[1].x, enemy[1].y)) #tók smá tíma að leita af þessu, var originally með bara 1 mynd fyrir hvert
             self.screen.blit(self.player, (self.playerX, self.playerY))
-            if self.bullet:
-                pygame.draw.rect(self.screen, (255, 255, 255), self.bullet)
-            for bullet in self.bullets:
-                pygame.draw.rect(self.screen, (255,255,255), bullet)
+            if self.skot:
+                pygame.draw.rect(self.screen, (255, 255, 255), self.skot)
+            for skot in self.skotlist:
+                pygame.draw.rect(self.screen, (255,255,255), skot)
 
 
 
-            if self.lives > 0:
-                self.bulletUpdate()
+            if self.hp > 0:
+                self.skotUpdate()
                 self.enemyUpdate()
                 self.playerUpdate()
 
-            self.screen.blit(self.font.render("Lives: {}".format(self.lives), -1, (255,255,255)), (20, 10))
+            self.screen.blit(self.font.render("HP: {}".format(self.hp), -1, (255,255,255)), (20, 10))
             pygame.display.flip()
 
 
